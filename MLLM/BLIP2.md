@@ -11,4 +11,4 @@
 ### Q-Former (Image Transformer + Text Transformer)
 #### Image Transformer 和 Text Transformer 的 Self Attention 和 Feed Forward 层均由预训练的 Bert 初始化
 #### Image Transformer 的 Cross Attention 层随机初始化
-#### 
+#### Image Transformer 和 Text Transformer 共享 Self Attention 层
