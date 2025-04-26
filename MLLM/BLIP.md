@@ -3,7 +3,7 @@
 ### 问题一：训练一个模型即可以做检索又可以做生成
 ### 问题二：解决网络收集图文对数据中的噪声问题
 
-<img src="BLIP.png"><br>
+<img src="Image/BLIP.png"><br>
 ### BLIP 如何做到既可以检索又可以生成？
 #### 引入编码器-解码器的多模态混合结构 MED，包括两个单模态编码器（lmage Encoder，Text Encoder），一个以图像为基础的编码器（image-grounded text encoder）和一个以图像为基础的解码器（image-grounded text decoder），三者共享一部分参数
 #### 通过三个损失函数联合进行预训练：
@@ -14,7 +14,7 @@
  
 ### BLIP 如何解决网络收集图文对数据中的噪声问题？
 #### Captioning and Filtering 模块
-![img.png](CapFilt.png)
+<img src="Image/CapFilt.png"><br>
 #### 训练模型的数据包含两部分：
 #### $(I_w, T_w)$：从网络采集的图文对，质量较差
 #### $(I_h, T_h)$：人工标注的图文对，质量较好
