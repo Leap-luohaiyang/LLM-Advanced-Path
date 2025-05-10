@@ -46,7 +46,7 @@ def highlight_bbox(matches, shape, expand_ratio, square_bbox, filter_rate):
     """
     根据给定的边界框（bounding box）信息在图像上生成一个对应的二值掩码（mask）
     :param matches:
-    :param shape:
+    :param shape: (24, 24)
     :param expand_ratio:
     :param square_bbox: True
     :param filter_rate:
@@ -79,11 +79,13 @@ def highlight_bbox(matches, shape, expand_ratio, square_bbox, filter_rate):
     '''以中心点为中心，扩展边界框'''
 
     mask = np.zeros(shape, dtype=int)
+    '''24×24'''
 
     x_min_idx = int(x_min * (width - 1))
     x_max_idx = int(x_max * (width - 1))
     y_min_idx = int(y_min * (height - 1))
     y_max_idx = int(y_max * (height - 1))
+    '''将 bounding box 中的坐标转换为图像中 Token 的横纵向索引'''
 
     mask[y_min_idx:y_max_idx + 1, x_min_idx:x_max_idx + 1] = 1
 
@@ -175,7 +177,7 @@ def eval_model(args):
 
         with torch.inference_mode():
             output_ids = model.generate(
-                input_ids_gd,
+                input_ids_gd,  # inputs_ids_gd 相较于 input_ids 增加了手动设定的锚定提示 input_ids: Text(Q) input_ids_gd: Text(Q,Pg)
                 images=image_tensor.to(dtype=torch.float16, device='cuda', non_blocking=True),
                 do_sample=True if args.temperature > 0 else False,
                 temperature=args.temperature,
@@ -183,6 +185,7 @@ def eval_model(args):
                 num_beams=args.num_beams,
                 max_new_tokens=128,
                 use_cache=True)
+            '''第一次生成，获取模型的初始响应，即与问题相关的大致区域的 bounding box 坐标'''
 
         input_token_len = input_ids_gd.shape[1]
         n_diff_input_output = (input_ids_gd != output_ids[:, :input_token_len]).sum().item()
@@ -198,18 +201,24 @@ def eval_model(args):
 
         pattern = r'\[\-?\d+\.\d+, \-?\d+\.\d+, \-?\d+\.\d+, \-?\d+\.\d+\]'
         matches = re.findall(pattern, outputs)
+        '''从模型的文本输出中提取符合边界框格式的字符串，返回列表 matches'''
+        '''outputs = {“train_1”:[0, 0.2, 0.6, 0.8] ——> matches = [0, 0.2, 0.6, 0.8]'''
 
         if len(matches) == 0:
             masked_img_token_map = [1] * 576
+            '''无边界框，对所有区域平等关注'''
         else:
             masked_img_token_map = highlight_bbox(matches, (24, 24), args.expansion_rate, args.square_bbox,
                                                   args.filter_rate).flatten().tolist()
 
         image_token_indices = torch.where(input_ids == IMAGE_TOKEN_INDEX)[1]
+        '''找到图像 Token 的位置'''
         image_token_start = image_token_indices[0]
+        '''图像 Token 的开始索引'''
         masked_token_map = highlighted_mask[:image_token_start] + masked_img_token_map + highlighted_mask[
                                                                                          image_token_start + 1:]
-
+        '''将文本部分的高亮掩码和图像部分的掩码合并，生成一个完整的 Token 级掩码'''
+        '''指导模型在生成时对文本和图像区域的关注程度'''
         # change to long tensor:
         masked_token_map = torch.LongTensor(masked_token_map).cuda()
 

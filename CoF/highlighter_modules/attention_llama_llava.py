@@ -10,25 +10,25 @@ from torch.nn import CrossEntropyLoss
 
 import types
 
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 # this file is for partial highlight helper functions.
 def llama_attn_forward(
-    self,
-    hidden_states: torch.Tensor,
-    attention_mask: Optional[torch.Tensor] = None,
-    position_ids: Optional[torch.LongTensor] = None,
-    past_key_value: Optional[Tuple[torch.Tensor]] = None,
-    output_attentions: bool = False,
-    use_cache: bool = False,
-    ):
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_value: Optional[Tuple[torch.Tensor]] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+):
     # a copy of the original forward.
     bsz, q_len, _ = hidden_states.size()
     query_states = self.q_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     key_states = self.k_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     value_states = self.v_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-    
+
     kv_seq_len = key_states.shape[-2]
     if past_key_value is not None:
         kv_seq_len += past_key_value[0].shape[-2]
@@ -80,16 +80,17 @@ def llama_attn_forward(
 
     return attn_output, attn_weights, past_key_value
 
+
 def llama_new_forward(
-    self,
-    hidden_states: torch.Tensor,
-    attention_mask: Optional[torch.Tensor] = None,
-    position_ids: Optional[torch.LongTensor] = None,
-    past_key_value: Optional[Tuple[torch.Tensor]] = None,
-    output_attentions: bool = False,
-    use_cache: bool = False,
-    attention_weight: float = 7.0,
-    ):
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_value: Optional[Tuple[torch.Tensor]] = None,
+        output_attentions: bool = False,
+        use_cache: bool = False,
+        attention_weight: float = 7.0,
+):
     bsz, q_len, _ = hidden_states.size()
     query_states = self.q_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     key_states = self.k_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
@@ -133,12 +134,12 @@ def llama_new_forward(
     if self.hl_mask is not None:
         # A relatively faster implementation.
         # change hl_mask to the same shape as attn_weights, change type as the same as attn_weights.
-        hl_mask_pos = self.hl_mask*self.attention_weight
+        hl_mask_pos = self.hl_mask * self.attention_weight
         hl_mask = hl_mask_pos.unsqueeze(0).unsqueeze(0).unsqueeze(2).expand_as(attn_weights).to(attn_weights.dtype)
 
         attn_weights = attn_weights.to(device)
         hl_mask = hl_mask.to(device)
-        
+
         attn_weights += hl_mask
         self.hl_mask = torch.cat((self.hl_mask, torch.zeros(1).cuda()), dim=-1)
     ###############################################
@@ -164,6 +165,7 @@ def llama_new_forward(
 
     return attn_output, attn_weights, past_key_value
 
+
 def set_highlight_mask(self, highlight_mask=None, image_token_start=None):
     if highlight_mask is None:
         self.hl_mask = None
@@ -173,6 +175,7 @@ def set_highlight_mask(self, highlight_mask=None, image_token_start=None):
         self.image_token_start = None
     else:
         self.image_token_start = image_token_start.float()
+
 
 def modify_llama_attention(self, highlight_mask, attention_weight=None, image_token_start=None):
     count = 0
@@ -188,7 +191,8 @@ def modify_llama_attention(self, highlight_mask, attention_weight=None, image_to
                 module.forward = types.MethodType(llama_new_forward, module)
                 module.set_highlight_mask = types.MethodType(set_highlight_mask, module)
                 module.set_highlight_mask(highlight_mask, image_token_start)
-                
+
+
 def reset_llama_model(self):
     # delete the attribute hl_mask in the model.
     if hasattr(self.model, "hl_mask"):
@@ -196,10 +200,11 @@ def reset_llama_model(self):
     for module in self.model.modules():
         if isinstance(module, LlamaAttention):
             module.forward = module.ori_forward
-            
+
+
 # inference modification functions for llava.
 def prepare_llava_hl_inputs_for_generation(
-    self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
+        self, input_ids, past_key_values=None, attention_mask=None, inputs_embeds=None, **kwargs
 ):
     if past_key_values:
         input_ids = input_ids[:, -1:]
@@ -224,23 +229,24 @@ def prepare_llava_hl_inputs_for_generation(
     )
     return model_inputs
 
+
 def llava_hl_forward(
-    self,
-    input_ids: torch.LongTensor = None,
-    attention_mask: Optional[torch.Tensor] = None,
-    position_ids: Optional[torch.LongTensor] = None,
-    past_key_values: Optional[List[torch.FloatTensor]] = None,
-    inputs_embeds: Optional[torch.FloatTensor] = None,
-    labels: Optional[torch.LongTensor] = None,
-    use_cache: Optional[bool] = None,
-    output_attentions: Optional[bool] = None,
-    output_hidden_states: Optional[bool] = None,
-    images: Optional[torch.FloatTensor] = None,
-    return_dict: Optional[bool] = None,
-    masked_token_map: Optional[torch.LongTensor] = None,
-    attention_weight: float = 1.0,
-    perturb_weight: float = 0.01,
-    image_token_start: float = 0,
+        self,
+        input_ids: torch.LongTensor = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        images: Optional[torch.FloatTensor] = None,
+        return_dict: Optional[bool] = None,
+        masked_token_map: Optional[torch.LongTensor] = None,
+        attention_weight: float = 1.0,
+        perturb_weight: float = 0.01,
+        image_token_start: float = 0,
 ):
     if inputs_embeds is None:
         (
@@ -258,17 +264,17 @@ def llava_hl_forward(
             labels,
             images
         )
-        
+
     if masked_token_map is not None and not hasattr(self.model, "hl_mask"):
-    
+
         if torch.sum(masked_token_map) > 0:
             seq_len = inputs_embeds.shape[-2]
             masked_token_map = masked_token_map[:seq_len]
-            
+
             self.modify_attention(masked_token_map, attention_weight, image_token_start)
-            
+
             if inputs_embeds.shape[0] >= 1:
-                inputs_embeds[-1][masked_token_map == 1] = inputs_embeds[-1][masked_token_map == 1]*perturb_weight
+                inputs_embeds[-1][masked_token_map == 1] = inputs_embeds[-1][masked_token_map == 1] * perturb_weight
 
     return super(LlavaLlamaForCausalLM, self).forward(
         input_ids=input_ids,
@@ -289,8 +295,8 @@ def llava_modify_inf(model):
     model.prepare_inputs_for_generation = types.MethodType(prepare_llava_hl_inputs_for_generation, model)
     model.modify_attention = types.MethodType(modify_llama_attention, model)
     model.reset_model = types.MethodType(reset_llama_model, model)
-    
+
+
 def llama_modify_inf(model):
     model.modify_attention = types.MethodType(modify_llama_attention, model)
     model.reset_model = types.MethodType(reset_llama_model, model)
-    

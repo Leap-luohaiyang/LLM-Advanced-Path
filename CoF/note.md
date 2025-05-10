@@ -15,3 +15,6 @@
 “According to the information in the image and the question, detail the bounding box of the region in the image that contains the answer in JSON format.”  
 得到答案区域的坐标后，执行一个后处理步骤，旨在优化这个输出：
 确定包围盒的中心坐标，引入了一个扩展的超参数 α 调整包围盒，规定包围盒应该扩展到的合适大小
+#### 细粒度注意力重加权
+得到目标区域的坐标后，将其转换为二进制掩码矩阵 M。对于目标区域内的元素，赋值为 1，而对于其他所有元素，赋值为 0。这个二值掩码作为解码后续序列的条件。在实际应用中，对于解码器中的每个注意力层，将 M 对应的图像 Token 的注意力分数乘以一个缩放因子 λ，将模型的注意力引导到特定的图像区域。  
+$$\hat{A} = softmax(log(\lambda) · M + A)$$
