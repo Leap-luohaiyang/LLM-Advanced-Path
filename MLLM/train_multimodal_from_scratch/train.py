@@ -111,18 +111,29 @@ class MyDataset(Dataset):
         try:
             image_name = sample['image']
             conversations = sample['conversations']
+            '''image_name 样例：GCC_train_002582585.jpg'''
+            '''conversations 样例：[ { "from": "human", "value": "提供给定图像的简要描述。\n<image>" }, 
+            { "from": "gpt", "value": "橄榄油是自由使用的健康成分。" } ]'''
+
             q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'},
                                                          {"role": "user", "content": conversations[0]['value']}], \
                                                         tokenize=False, \
                                                         add_generation_prompt=True).replace('<image>',
                                                                                             '<|image_pad|>' * self.config.image_pad_num)
-            '''apply_chat_template: 构造对话上下文；tokenize=False: 返回字符串，不立即转为 token'''
+            '''apply_chat_template: 构造对话上下文；
+            系统提示：You are a helpful assistant.
+            tokenize=False: 返回字符串而不是token ID
+            '''
 
             a_text = conversations[1]['value'] + self.tokenizer.eos_token
+            '''数据集中 GPT 的回答文本'''
             q_input_ids = self.tokenizer(q_text)['input_ids']
+            '''系统提示 + 问题 token id'''
             a_input_ids = self.tokenizer(a_text)['input_ids']
+            '''回答 token id'''
             input_ids = q_input_ids + a_input_ids
             labels = [tokenizer.pad_token_id] * len(q_input_ids) + a_input_ids
+            '''标签: 问题部分用 pad_token_id 填充，回答部分保留'''
             input_ids = input_ids[:-1]
             labels = labels[1:]
 
