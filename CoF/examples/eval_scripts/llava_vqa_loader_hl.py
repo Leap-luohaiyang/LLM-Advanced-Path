@@ -106,7 +106,8 @@ class CustomDataset(Dataset):
         image_file = line["image"]
         qs = line["text"]
         qs_gd = qs.split("\n")[
-                    0] + "\nAccording to the information in the image and the question, \ndetail the bounding box of the region in the image that contains the answer in JSON format."
+                    0] + ("\nAccording to the information in the image and the question, \ndetail the bounding box of "
+                          "the region in the image that contains the answer in JSON format.")
         if self.model_config.mm_use_im_start_end:
             qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs
             qs_gd = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs_gd
@@ -189,9 +190,12 @@ def eval_model(args):
 
         input_token_len = input_ids_gd.shape[1]
         n_diff_input_output = (input_ids_gd != output_ids[:, :input_token_len]).sum().item()
+        '''计算模型生成结果 output_ids 中与输入 input_ids_gd 不一致的Token数量'''
+        '''正常情况下输入部分被完整复制，所以应当为 0'''
         if n_diff_input_output > 0:
             print(f'[Warning] {n_diff_input_output} output_ids are not the same as the input_ids')
         outputs = tokenizer.batch_decode(output_ids[:, input_token_len:], skip_special_tokens=True)[0]
+        '''跳过输入Token，仅保留新生成的Token'''
         outputs = outputs.strip()
 
         qs_highlighted_parts = []
@@ -215,6 +219,7 @@ def eval_model(args):
         '''找到图像 Token 的位置'''
         image_token_start = image_token_indices[0]
         '''图像 Token 的开始索引'''
+        '''LLaVA 将 336×336 的图像切分为 24×24 的网格，也就是说有 576 个视觉 token'''
         masked_token_map = highlighted_mask[:image_token_start] + masked_img_token_map + highlighted_mask[
                                                                                          image_token_start + 1:]
         '''将文本部分的高亮掩码和图像部分的掩码合并，生成一个完整的 Token 级掩码'''
@@ -238,6 +243,7 @@ def eval_model(args):
                 num_beams=args.num_beams,
                 max_new_tokens=128,
                 use_cache=True)
+        '''perturb_weight > 0: 增强对掩码区域的关注; 对 masked_token_map 标记的 Token，在注意力计算时乘以 attention_weight'''
 
         input_token_len = input_ids.shape[1]
         n_diff_input_output = (input_ids != output_ids[:, :input_token_len]).sum().item()
