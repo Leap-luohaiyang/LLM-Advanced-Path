@@ -143,8 +143,8 @@ class MyDataset(Dataset):
             default_image = Image.new('RGB', (224, 224), color='white')
             pixel_values = self.processor(text=None, images=default_image)['pixel_values']
             q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'},
-                                                         {"role": "user", "content": "图片内容是什么\n<image>"}], \
-                                                        tokenize=False, \
+                                                         {"role": "user", "content": "图片内容是什么\n<image>"}],
+                                                        tokenize=False,
                                                         add_generation_prompt=True).replace('<image>',
                                                                                             '<|image_pad|>' * self.config.image_pad_num)
             a_text = '图片内容为空' + self.tokenizer.eos_token

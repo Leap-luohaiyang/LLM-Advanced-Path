@@ -22,3 +22,9 @@
 #### (ii) 用 ITC 和 ITM 任务在 $(I_h, T_h)$ 数据集上训练一个 Filter 模型，用 LM 任务在 $(I_h, T_h)$ 数据集上训练一个 Captioner 模型
 #### (iii) 对来自网络的图片通过 Captioner 生成对应文本 $T_s$，仅保留 Filter 判断匹配的图文对。过滤后的数据包含三部分：1、判断图文匹配的网络文本对；2、判断图文匹配的网络图片+Captioner生成的文本对；3、原始的人工标注的图文对
 #### (iiii) 将过滤后的一组数据作为训练数据，重新训练一个 BLIP 模型（参数需重新初始化）
+
+先利用网络上获取的图文对和人工标注好的图文对，对BLIP网络进行预训练，获得一个基础版本的多模态混合encoder-decoder模型  
+然后利用ITC和ITM任务，在人工标注的高质量图文对上，对BLIP的image-grounded text encoder进行finetune，获得一个高置信度的Filter  
+然后利用LM任务，在人工标注的高质量图文对上，对BLIP的image-grounded text decoder进行finetune，获得一个高质量的Captioner  
+然后针对网络获取的图文对中的图片进行captioning操作，获取描述文本，与图片组成一个图文对。将该图文对和网络获取的图文对一起送进filter中，获取过滤成功的图文对  
+最后将过滤成功的图文对，和人工标注的高质量图文对组成一个全新的数据集，利用该数据集对BLIP进行预训练，获得更加高质量的图文预训练模型。
