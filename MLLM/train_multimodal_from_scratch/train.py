@@ -116,8 +116,8 @@ class MyDataset(Dataset):
             { "from": "gpt", "value": "橄榄油是自由使用的健康成分。" } ]'''
 
             q_text = self.tokenizer.apply_chat_template([{"role": "system", "content": 'You are a helpful assistant.'},
-                                                         {"role": "user", "content": conversations[0]['value']}], \
-                                                        tokenize=False, \
+                                                         {"role": "user", "content": conversations[0]['value']}],
+                                                        tokenize=False,
                                                         add_generation_prompt=True).replace('<image>',
                                                                                             '<|image_pad|>' * self.config.image_pad_num)
             '''apply_chat_template: 构造对话上下文；
