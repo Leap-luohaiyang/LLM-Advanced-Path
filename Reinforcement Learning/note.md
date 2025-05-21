@@ -17,7 +17,8 @@ PPO 算法需要一个预先训练的 reward 模型来为模型的输出进行�
 1、基准模型（Reference Model）：SFT 之后的大模型，新训练模型输出的概率分布不能和基准模型相差太大  
 2、训练模型（Active Model）：结构和基准模型完全一致，PPO 的目的是优化训练模型，训练模型输出的概率分布不能和基准模型相差太大   
 3、奖励模型（Reward Model）：对一个问答序列进行评分，输出一个分数  
-4、状态价值模型（State-Value Model）：对每一个状态评估其价值，根据截至目前的 Token 序列，预测到序列生成结束后，这个问答序列的期望回报是多少（需要对每个 Token 都输出）
+4、状态价值模型（State-Value Model）：对每一个状态评估其价值，根据截至目前的 Token 序列，预测到序列生成结束后，这个问答序列的期望回报是多少（需要对每个 Token 都输出）  
+PPO 算法使用 Actor-Critic 架构，Actor 是训练模型，Critic 是状态价值模型
 
 ![img.png](four_models.png)
 
@@ -32,3 +33,12 @@ PPO 算法需要一个预先训练的 reward 模型来为模型的输出进行�
 #### PPO 算法是如何计算每个 Token 的 GAE 优势值的？
 为每个 Token 生成 reward 值 $\Rightarrow$ 用这些 reward 值训练 State-Value Model $\Rightarrow$ 利用每个 token 的 reward 值和状态价值共同训练出 GAE 的值
 基础监督信号都来自每个 Token 的 reward，然而每个 Token 的 reward 值并不准确。所以 PPO 算法不太适合大模型生成任务，因为只能对最终输出给出一个奖励值，而无法对每一个 Token 给出具有参考价值的奖励值
+
+#### GRPO 算法
+针对同一个 prompt，通过采样生成多个不同的回答 $\Rightarrow$ 调用 reward 模型或者基于规则的 reward 函数，给出一个 reward 值表示回答的好坏  
+思想：reward 针对整个回答，无法给出每个 Token 的具有意义的 reward 值，那就把一个回答序列看作一个整体。  
+prompt 是当前状态，那么一个回答序列就是一个 action。一个 prompt 下生成多个回答就相当于在一个状态下采取了多个不同的 action  
+大模型回答问题时，整个 Trajectory 只有一个状态（prompt），一个 action（回答）
+如何体现不同回答（不同 action）的优势？每个回答得到的 reward 值减去所有回答得到的 reward 均值。将每一个回答所得优势值复制分配给该回答的每一个 Token
+![img.png](GRPO.png)
+
