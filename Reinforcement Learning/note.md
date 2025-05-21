@@ -18,3 +18,10 @@ PPO 算法需要一个预先训练的 reward 模型来为模型的输出进行�
 2、训练模型（Active Model）：结构和基准模型完全一致，PPO 的目的是优化训练模型，训练模型输出的概率分布不能和基准模型相差太大   
 3、奖励模型（Reward Model）：对一个问答序列进行评分，输出一个分数  
 4、状态价值模型（State-Value Model）：对每一个状态评估其价值，根据截至目前的 Token 序列，预测到序列生成结束后，这个问答序列的期望回报是多少（需要对每个 Token 都输出）
+
+![img.png](four_models.png)
+
+对于大模型输出的每一步而言，state：截止到当前 Token 的序列；action：接下来输出的 Token；大模型：策略函数
+对于 Reward Model 来说，score 只给最后一个 Token
+训练模型做出每一个 actioon，即输出每一个 Token 的 Reward 等于其输出 Token 的概率分布与基准模型输出 Token 的概率分布间的 KL 散度 * -0.2
+![img.png](each_token_reward.png)
