@@ -25,3 +25,10 @@ PPO 算法需要一个预先训练的 reward 模型来为模型的输出进行�
 对于 Reward Model 来说，score 只给最后一个 Token
 训练模型做出每一个 actioon，即输出每一个 Token 的 Reward 等于其输出 Token 的概率分布与基准模型输出 Token 的概率分布间的 KL 散度 * -0.2
 ![img.png](each_token_reward.png)
+
+最后一个 Token 的 reward 的值是有意义的，其他 Token 的 reward 值只是用来限制新的模型不能和原来的模型差别太大
+![img.png](token_reward.png)
+
+#### PPO 算法是如何计算每个 Token 的 GAE 优势值的？
+为每个 Token 生成 reward 值 $\Rightarrow$ 用这些 reward 值训练 State-Value Model $\Rightarrow$ 利用每个 token 的 reward 值和状态价值共同训练出 GAE 的值
+基础监督信号都来自每个 Token 的 reward，然而每个 Token 的 reward 值并不准确。所以 PPO 算法不太适合大模型生成任务，因为只能对最终输出给出一个奖励值，而无法对每一个 Token 给出具有参考价值的奖励值
