@@ -24,7 +24,7 @@ PPO 算法使用 Actor-Critic 架构，Actor 是训练模型，Critic 是状态�
 
 对于大模型输出的每一步而言，state：截止到当前 Token 的序列；action：接下来输出的 Token；大模型：策略函数
 对于 Reward Model 来说，score 只给最后一个 Token
-训练模型做出每一个 actioon，即输出每一个 Token 的 Reward 等于其输出 Token 的概率分布与基准模型输出 Token 的概率分布间的 KL 散度 * -0.2
+训练模型做出每一个 action，即输出每一个 Token 的 Reward 等于其输出 Token 的概率分布与基准模型输出 Token 的概率分布间的 KL 散度 * -0.2
 ![img.png](each_token_reward.png)
 
 最后一个 Token 的 reward 的值是有意义的，其他 Token 的 reward 值只是用来限制新的模型不能和原来的模型差别太大
